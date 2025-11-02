@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        protected_namespaces = ('settings_',)  # Fix Pydantic warning for model_directory
     
     @property
     def allowed_languages(self) -> Optional[List[str]]:

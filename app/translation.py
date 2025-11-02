@@ -55,7 +55,29 @@ class TranslationService:
                 logger.info("Updating translation models...")
                 argostranslate.package.update_package_index()
                 available_packages = argostranslate.package.get_available_packages()
-                argostranslate.package.install_from_index(available_packages)
+                
+                # Install all packages if many are requested, otherwise install popular pairs
+                # Popular language pairs: en<->es, en<->fr, en<->de, en<->it, en<->pt, en<->ru, en<->zh
+                popular_pairs = [
+                    "en", "es", "fr", "de", "it", "pt", "ru", "zh", "ja", "ar"
+                ]
+                
+                # Filter packages to popular language pairs
+                packages_to_install = []
+                for package in available_packages:
+                    if package.from_code in popular_pairs and package.to_code in popular_pairs:
+                        packages_to_install.append(package)
+                
+                if packages_to_install:
+                    logger.info(f"Installing {len(packages_to_install)} popular translation models...")
+                    for package in packages_to_install[:20]:  # Limit to 20 packages
+                        try:
+                            argostranslate.package.install(package)
+                            logger.info(f"Installed: {package.from_code} -> {package.to_code}")
+                        except Exception as e:
+                            logger.warning(f"Failed to install {package.from_code}->{package.to_code}: {e}")
+                else:
+                    logger.warning("No matching packages found to install")
             
             # Get installed packages
             self._installed_packages = argostranslate.package.get_installed_packages()

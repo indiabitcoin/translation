@@ -1,5 +1,6 @@
 """Main application entry point for LibreTranslate server."""
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
@@ -22,11 +23,55 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Initialize translation service
+translation_service = TranslationService(
+    load_only=settings.allowed_languages,
+    model_directory=settings.model_directory
+)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan events."""
+    # Startup
+    logger.info("Starting LibreTranslate server...")
+    logger.info(f"Configuration: host={settings.host}, port={settings.port}")
+    
+    if settings.allowed_languages:
+        logger.info(f"Loading languages: {settings.allowed_languages}")
+    
+    # Auto-install models if enabled and none are installed
+    update_models = settings.update_models
+    if settings.auto_install_models:
+        # Check if any models are installed
+        try:
+            import argostranslate.package
+            installed = argostranslate.package.get_installed_packages()
+            if not installed:
+                logger.info("No models found. Auto-installing default models...")
+                update_models = True
+        except Exception as e:
+            logger.warning(f"Could not check installed packages: {e}")
+    
+    success = translation_service.initialize(update_models=update_models)
+    if not success:
+        logger.error("Failed to initialize translation service")
+        raise RuntimeError("Translation service initialization failed")
+    
+    logger.info("Server started successfully")
+    
+    yield  # Application runs here
+    
+    # Shutdown (if needed)
+    logger.info("Shutting down server...")
+
+
 # Create FastAPI app
 app = FastAPI(
     title="LibreTranslate Server",
     description="Self-hosted translation server using LibreTranslate",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Configure CORS
@@ -36,12 +81,6 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-)
-
-# Initialize translation service
-translation_service = TranslationService(
-    load_only=settings.allowed_languages,
-    model_directory=settings.model_directory
 )
 
 
@@ -58,23 +97,6 @@ def verify_api_key(api_key: Optional[str] = Header(None, alias="X-API-Key")) -> 
         raise HTTPException(status_code=403, detail="Invalid API key")
     
     return True
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize translation service on startup."""
-    logger.info("Starting LibreTranslate server...")
-    logger.info(f"Configuration: host={settings.host}, port={settings.port}")
-    
-    if settings.allowed_languages:
-        logger.info(f"Loading languages: {settings.allowed_languages}")
-    
-    success = translation_service.initialize(update_models=settings.update_models)
-    if not success:
-        logger.error("Failed to initialize translation service")
-        raise RuntimeError("Translation service initialization failed")
-    
-    logger.info("Server started successfully")
 
 
 @app.get("/health", response_model=HealthResponse)
