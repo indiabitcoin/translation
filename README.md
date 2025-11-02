@@ -2,6 +2,8 @@
 
 A self-hosted translation server built with LibreTranslate API, providing REST endpoints for machine translation. Perfect for integrating translation capabilities into multiple web applications and websites.
 
+🌐 **Live Server**: https://translate.shravani.group/
+
 ## Features
 
 - 🌐 RESTful API for translation services

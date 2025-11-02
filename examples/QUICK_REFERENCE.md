@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-http://your-server.com:5000
+https://translate.shravani.group/
 ```
 
 ## Endpoints
