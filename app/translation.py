@@ -70,12 +70,18 @@ class TranslationService:
                 
                 if packages_to_install:
                     logger.info(f"Installing {len(packages_to_install)} popular translation models...")
+                    installed_count = 0
                     for package in packages_to_install[:20]:  # Limit to 20 packages
                         try:
-                            argostranslate.package.install(package)
-                            logger.info(f"Installed: {package.from_code} -> {package.to_code}")
+                            logger.info(f"Downloading {package.from_code} -> {package.to_code}...")
+                            download_path = package.download()
+                            logger.info(f"Installing {package.from_code} -> {package.to_code}...")
+                            argostranslate.package.install_from_path(download_path)
+                            installed_count += 1
+                            logger.info(f"Successfully installed: {package.from_code} -> {package.to_code}")
                         except Exception as e:
                             logger.warning(f"Failed to install {package.from_code}->{package.to_code}: {e}")
+                    logger.info(f"Installed {installed_count} out of {min(len(packages_to_install), 20)} packages")
                 else:
                     logger.warning("No matching packages found to install")
             
