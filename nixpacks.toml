@@ -3,13 +3,14 @@ nixPkgs = ["python312", "python312Packages.pip", "cmake", "pkg-config", "gcc"]
 
 [phases.install]
 cmds = [
-    "python3 -m pip install --no-cache-dir --upgrade pip setuptools wheel",
-    "python3 -m pip install --no-cache-dir -r requirements.txt"
+    "python3 -m venv /opt/venv",
+    ". /opt/venv/bin/activate && pip install --no-cache-dir --upgrade pip setuptools wheel",
+    ". /opt/venv/bin/activate && pip install --no-cache-dir -r requirements.txt"
 ]
 
 [phases.build]
 cmds = []
 
 [start]
-cmd = "python3 main.py"
+cmd = "/opt/venv/bin/python3 main.py"
 
