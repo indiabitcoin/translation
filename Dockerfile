@@ -3,9 +3,11 @@ FROM python:3.10-slim
 # Set working directory
 WORKDIR /app
 
-# Install minimal system dependencies
+# Install minimal system dependencies (including cmake for sentencepiece)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    cmake \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching

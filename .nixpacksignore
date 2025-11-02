@@ -1,0 +1,6 @@
+.git
+.gitignore
+examples/
+*.md
+.DS_Store
+
