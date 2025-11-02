@@ -1,0 +1,179 @@
+"""Main application entry point for LibreTranslate server."""
+import logging
+from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional
+
+from app.config import settings
+from app.models import (
+    TranslateRequest,
+    TranslateResponse,
+    LanguageInfo,
+    DetectRequest,
+    DetectResponse,
+    HealthResponse
+)
+from app.translation import TranslationService
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Create FastAPI app
+app = FastAPI(
+    title="LibreTranslate Server",
+    description="Self-hosted translation server using LibreTranslate",
+    version="1.0.0"
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Initialize translation service
+translation_service = TranslationService(
+    load_only=settings.allowed_languages,
+    model_directory=settings.model_directory
+)
+
+
+def verify_api_key(api_key: Optional[str] = Header(None, alias="X-API-Key")) -> bool:
+    """Verify API key if required."""
+    if not settings.api_key_required:
+        return True
+    
+    if not api_key:
+        raise HTTPException(status_code=401, detail="API key required")
+    
+    valid_keys = settings.valid_api_keys
+    if valid_keys and api_key not in valid_keys:
+        raise HTTPException(status_code=403, detail="Invalid API key")
+    
+    return True
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize translation service on startup."""
+    logger.info("Starting LibreTranslate server...")
+    logger.info(f"Configuration: host={settings.host}, port={settings.port}")
+    
+    if settings.allowed_languages:
+        logger.info(f"Loading languages: {settings.allowed_languages}")
+    
+    success = translation_service.initialize(update_models=settings.update_models)
+    if not success:
+        logger.error("Failed to initialize translation service")
+        raise RuntimeError("Translation service initialization failed")
+    
+    logger.info("Server started successfully")
+
+
+@app.get("/health", response_model=HealthResponse)
+async def health_check():
+    """Health check endpoint."""
+    return HealthResponse(status="ok")
+
+
+@app.get("/languages", response_model=list[LanguageInfo])
+async def get_languages(_: bool = Depends(verify_api_key)):
+    """Get list of supported languages."""
+    languages = translation_service.get_languages()
+    if languages is None:
+        raise HTTPException(status_code=500, detail="Failed to retrieve languages")
+    
+    # Convert to LanguageInfo format
+    result = []
+    for lang in languages:
+        if isinstance(lang, dict):
+            code = lang.get("code", "")
+            name = lang.get("name", code)
+            result.append(LanguageInfo(code=code, name=name))
+        else:
+            # Handle case where languages might be returned in different format
+            logger.warning(f"Unexpected language format: {lang}")
+    
+    return result
+
+
+@app.post("/translate", response_model=TranslateResponse)
+async def translate(
+    request: TranslateRequest,
+    _: bool = Depends(verify_api_key)
+):
+    """Translate text from source language to target language."""
+    if not translation_service.is_initialized():
+        raise HTTPException(
+            status_code=503,
+            detail="Translation service not available"
+        )
+    
+    translated_text = translation_service.translate(
+        text=request.q,
+        source=request.source,
+        target=request.target,
+        format_type=request.format
+    )
+    
+    if translated_text is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Translation failed"
+        )
+    
+    return TranslateResponse(translatedText=translated_text)
+
+
+@app.post("/detect", response_model=DetectResponse)
+async def detect_language(
+    request: DetectRequest,
+    _: bool = Depends(verify_api_key)
+):
+    """Detect the language of the given text."""
+    if not translation_service.is_initialized():
+        raise HTTPException(
+            status_code=503,
+            detail="Translation service not available"
+        )
+    
+    result = translation_service.detect_language(request.q)
+    
+    if result is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Language detection failed"
+        )
+    
+    # Handle different response formats
+    if isinstance(result, dict):
+        language = result.get("language", "")
+        confidence = result.get("confidence", 0.0)
+    else:
+        # Fallback if result format is unexpected
+        logger.warning(f"Unexpected detection result format: {result}")
+        language = str(result) if result else ""
+        confidence = 0.0
+    
+    return DetectResponse(language=language, confidence=confidence)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    logger.info(f"Starting server on {settings.host}:{settings.port}")
+    uvicorn.run(
+        "main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=False,
+        log_level="info"
+    )
+

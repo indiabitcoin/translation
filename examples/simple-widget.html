@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation Widget</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .translator-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        select {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        select:hover {
+            border-color: #667eea;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .swap-button {
+            padding: 12px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background 0.3s;
+        }
+        
+        .swap-button:hover {
+            background: #5568d3;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea[readonly] {
+            background: #f5f5f5;
+            cursor: default;
+        }
+        
+        .translate-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .translate-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .translate-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .error {
+            margin-top: 15px;
+            padding: 12px;
+            background: #fee;
+            color: #c33;
+            border-radius: 8px;
+            border-left: 4px solid #c33;
+            display: none;
+        }
+        
+        .error.show {
+            display: block;
+        }
+        
+        .info {
+            margin-top: 15px;
+            padding: 12px;
+            background: #e3f2fd;
+            color: #1976d2;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .character-count {
+            text-align: right;
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="translator-container">
+        <h1>🌐 Translation Widget</h1>
+        
+        <div class="controls">
+            <select id="sourceLang">
+                <option value="auto">Auto-detect</option>
+            </select>
+            
+            <button class="swap-button" onclick="swapLanguages()" title="Swap languages">⇄</button>
+            
+            <select id="targetLang">
+            </select>
+        </div>
+        
+        <textarea 
+            id="sourceText" 
+            placeholder="Enter text to translate..."
+            oninput="updateCharacterCount()"
+        ></textarea>
+        <div class="character-count">
+            <span id="charCount">0</span> characters
+        </div>
+        
+        <button class="translate-button" onclick="translateText()" id="translateBtn">
+            Translate
+        </button>
+        
+        <textarea 
+            id="translatedText" 
+            placeholder="Translation will appear here..." 
+            readonly
+        ></textarea>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="info">
+            💡 Tip: Use the swap button (⇄) to quickly switch between languages
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURATION - Change this to your server URL
+        const API_URL = 'http://localhost:5000'; // Change to your deployed server URL
+        
+        let languages = [];
+        
+        // Load available languages on page load
+        async function loadLanguages() {
+            try {
+                const response = await fetch(`${API_URL}/languages`);
+                if (!response.ok) {
+                    throw new Error('Failed to load languages');
+                }
+                languages = await response.json();
+                
+                const sourceSelect = document.getElementById('sourceLang');
+                const targetSelect = document.getElementById('targetLang');
+                
+                // Populate language selectors
+                languages.forEach(lang => {
+                    const sourceOption = new Option(lang.name, lang.code);
+                    const targetOption = new Option(lang.name, lang.code);
+                    
+                    sourceSelect.appendChild(sourceOption);
+                    targetSelect.appendChild(targetOption);
+                });
+                
+                // Set defaults
+                targetSelect.value = 'es'; // Default to Spanish
+            } catch (error) {
+                showError('Failed to load languages. Make sure the server is running.');
+                console.error('Error loading languages:', error);
+            }
+        }
+        
+        async function translateText() {
+            const sourceText = document.getElementById('sourceText').value.trim();
+            const sourceLang = document.getElementById('sourceLang').value;
+            const targetLang = document.getElementById('targetLang').value;
+            const translatedText = document.getElementById('translatedText');
+            const translateBtn = document.getElementById('translateBtn');
+            
+            // Validation
+            if (!sourceText) {
+                showError('Please enter text to translate');
+                return;
+            }
+            
+            // Clear previous error
+            hideError();
+            
+            // Disable button and show loading state
+            translateBtn.disabled = true;
+            translateBtn.textContent = 'Translating...';
+            translatedText.value = 'Translating...';
+            
+            try {
+                const response = await fetch(`${API_URL}/translate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        q: sourceText,
+                        source: sourceLang,
+                        target: targetLang,
+                        format: 'text'
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                translatedText.value = data.translatedText;
+            } catch (error) {
+                let errorMessage = error.message;
+                
+                if (error.message.includes('fetch')) {
+                    errorMessage = 'Cannot connect to translation server. Please check if the server is running.';
+                } else if (error.message.includes('503')) {
+                    errorMessage = 'Translation service is not available. The server may be starting up or models are loading.';
+                }
+                
+                showError(errorMessage);
+                translatedText.value = '';
+            } finally {
+                translateBtn.disabled = false;
+                translateBtn.textContent = 'Translate';
+            }
+        }
+        
+        function swapLanguages() {
+            const sourceSelect = document.getElementById('sourceLang');
+            const targetSelect = document.getElementById('targetLang');
+            const sourceText = document.getElementById('sourceText');
+            const translatedText = document.getElementById('translatedText');
+            
+            // Swap language selections
+            const temp = sourceSelect.value;
+            sourceSelect.value = targetSelect.value === 'auto' ? languages[0]?.code || 'en' : targetSelect.value;
+            targetSelect.value = temp === 'auto' ? 'en' : temp;
+            
+            // Swap text content
+            const tempText = sourceText.value;
+            sourceText.value = translatedText.value;
+            translatedText.value = tempText;
+            
+            // Auto-translate if both fields have text
+            if (sourceText.value.trim() && sourceText.value !== translatedText.value) {
+                translateText();
+            }
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+        
+        function hideError() {
+            const errorDiv = document.getElementById('error');
+            errorDiv.classList.remove('show');
+        }
+        
+        function updateCharacterCount() {
+            const count = document.getElementById('sourceText').value.length;
+            document.getElementById('charCount').textContent = count;
+        }
+        
+        // Allow Enter key to trigger translation (Ctrl+Enter)
+        document.getElementById('sourceText').addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                translateText();
+            }
+        });
+        
+        // Initialize on page load
+        loadLanguages();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Page Translation Example</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            padding: 20px;
+        }
+
+        /* Translation Control Panel */
+        .translation-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            max-width: 250px;
+        }
+
+        .translation-control h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .translation-control select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .translation-control button {
+            width: 100%;
+            padding: 8px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .translation-control button:hover {
+            background: #0056b3;
+        }
+
+        .translation-control button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .translation-control .status {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Page Content */
+        .content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding-top: 100px;
+        }
+
+        article {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #222;
+        }
+
+        h2 {
+            font-size: 24px;
+            margin: 25px 0 15px 0;
+            color: #444;
+        }
+
+        p {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .article-meta {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .comment {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 3px solid #007bff;
+        }
+
+        .comment-author {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #007bff;
+        }
+
+        /* Translation indicators */
+        [data-translated] {
+            position: relative;
+        }
+
+        [data-translated]:hover::after {
+            content: '✓ Translated';
+            position: absolute;
+            top: -20px;
+            left: 0;
+            background: #28a745;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .loading {
+            opacity: 0.6;
+            position: relative;
+        }
+
+        .loading::before {
+            content: '⏳ Translating...';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.9);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <!-- Translation Control Panel -->
+    <div class="translation-control">
+        <h3>🌐 Translate Page</h3>
+        <select id="targetLang">
+            <option value="">Select Language...</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="it">Italian</option>
+            <option value="pt">Portuguese</option>
+            <option value="ru">Russian</option>
+            <option value="zh">Chinese</option>
+            <option value="ja">Japanese</option>
+        </select>
+        <button id="translateBtn" onclick="translatePage()">Translate Page</button>
+        <button id="translateContentBtn" onclick="translateContent()">Translate Content Only</button>
+        <button id="resetBtn" onclick="resetTranslation()">Reset to Original</button>
+        <div class="status" id="status"></div>
+    </div>
+
+    <!-- Page Content -->
+    <div class="content">
+        <article id="mainArticle">
+            <h1 data-translatable>Welcome to Our Website</h1>
+            <div class="article-meta">Published on January 15, 2024</div>
+            
+            <h2 data-translatable>About Our Services</h2>
+            <p data-translatable>
+                We provide comprehensive translation services that help businesses communicate 
+                effectively across different languages and cultures. Our platform uses advanced 
+                machine learning technology to deliver accurate translations in real-time.
+            </p>
+            
+            <h2 data-translatable>How It Works</h2>
+            <p data-translatable>
+                Simply select the content you want to translate, choose your target language, 
+                and our system will instantly convert the text while preserving the original meaning 
+                and context. The translation happens on-the-fly without page reloads.
+            </p>
+
+            <h2 data-translatable>Features</h2>
+            <ul data-translatable>
+                <li>Real-time translation of page content</li>
+                <li>Support for multiple languages</li>
+                <li>Fast and accurate translations</li>
+                <li>Easy integration with any website</li>
+            </ul>
+
+            <h2 data-translatable>User Comments</h2>
+            
+            <div class="comment" data-translatable>
+                <div class="comment-author">John Doe</div>
+                <p>This is an amazing service! I can now read content in my native language instantly.</p>
+            </div>
+
+            <div class="comment" data-translatable>
+                <div class="comment-author">Jane Smith</div>
+                <p>The translation quality is excellent. I've been using it for all my projects.</p>
+            </div>
+
+            <div class="comment" data-translatable>
+                <div class="comment-author">Mike Johnson</div>
+                <p>Great tool for multilingual websites. Highly recommend!</p>
+            </div>
+        </article>
+    </div>
+
+    <script src="realtime-translation.js"></script>
+    <script>
+        // CONFIGURATION - Change to your server URL
+        const API_URL = 'http://localhost:5000'; // Change to your deployed server URL
+        
+        // Initialize translator
+        const translator = new RealtimeTranslator(API_URL);
+        let originalContent = new Map();
+        let currentLang = null;
+
+        // Store original content
+        function storeOriginalContent() {
+            document.querySelectorAll('[data-translatable]').forEach(el => {
+                if (!originalContent.has(el)) {
+                    originalContent.set(el, {
+                        text: el.textContent,
+                        html: el.innerHTML
+                    });
+                }
+            });
+        }
+
+        // Translate entire page
+        async function translatePage() {
+            const targetLang = document.getElementById('targetLang').value;
+            if (!targetLang) {
+                updateStatus('Please select a language', 'error');
+                return;
+            }
+
+            updateStatus('Translating page...', 'info');
+            document.getElementById('translateBtn').disabled = true;
+            
+            storeOriginalContent();
+            
+            const elements = document.querySelectorAll('[data-translatable]');
+            const total = elements.length;
+            let completed = 0;
+
+            for (const element of elements) {
+                element.classList.add('loading');
+                
+                try {
+                    const original = originalContent.get(element) || { text: element.textContent };
+                    const translated = await translator.translate(original.text, 'auto', targetLang);
+                    element.textContent = translated;
+                    element.setAttribute('data-translated', targetLang);
+                    element.classList.remove('loading');
+                    completed++;
+                    
+                    // Update progress
+                    updateStatus(`Translating... ${completed}/${total}`, 'info');
+                } catch (error) {
+                    console.error('Translation failed for element:', error);
+                    element.classList.remove('loading');
+                }
+            }
+
+            currentLang = targetLang;
+            document.getElementById('translateBtn').disabled = false;
+            updateStatus(`✓ Page translated to ${targetLang.toUpperCase()}`, 'success');
+        }
+
+        // Translate only content (exclude headings)
+        async function translateContent() {
+            const targetLang = document.getElementById('targetLang').value;
+            if (!targetLang) {
+                updateStatus('Please select a language', 'error');
+                return;
+            }
+
+            updateStatus('Translating content...', 'info');
+            document.getElementById('translateContentBtn').disabled = true;
+            
+            storeOriginalContent();
+            
+            // Translate only paragraphs and list items
+            const contentElements = document.querySelectorAll('p[data-translatable], li[data-translatable], .comment p[data-translatable]');
+            
+            for (const element of contentElements) {
+                element.classList.add('loading');
+                
+                try {
+                    const original = originalContent.get(element) || { text: element.textContent };
+                    const translated = await translator.translate(original.text, 'auto', targetLang);
+                    element.textContent = translated;
+                    element.setAttribute('data-translated', targetLang);
+                    element.classList.remove('loading');
+                } catch (error) {
+                    console.error('Translation failed:', error);
+                    element.classList.remove('loading');
+                }
+            }
+
+            currentLang = targetLang;
+            document.getElementById('translateContentBtn').disabled = false;
+            updateStatus(`✓ Content translated to ${targetLang.toUpperCase()}`, 'success');
+        }
+
+        // Reset to original language
+        function resetTranslation() {
+            originalContent.forEach((original, element) => {
+                element.innerHTML = original.html;
+                element.removeAttribute('data-translated');
+            });
+            
+            currentLang = null;
+            updateStatus('✓ Reset to original', 'success');
+        }
+
+        // Update status message
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.style.color = type === 'error' ? '#dc3545' : 
+                                  type === 'success' ? '#28a745' : '#666';
+        }
+
+        // Load available languages on startup
+        async function loadLanguages() {
+            try {
+                const response = await fetch(`${API_URL}/languages`);
+                const languages = await response.json();
+                
+                const select = document.getElementById('targetLang');
+                languages.forEach(lang => {
+                    const option = document.createElement('option');
+                    option.value = lang.code;
+                    option.textContent = lang.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load languages:', error);
+                updateStatus('Warning: Could not load languages', 'error');
+            }
+        }
+
+        // Initialize on page load
+        loadLanguages();
+        storeOriginalContent();
+    </script>
+</body>
+</html>
+
