@@ -56,22 +56,55 @@ class TranslationService:
                 argostranslate.package.update_package_index()
                 available_packages = argostranslate.package.get_available_packages()
                 
-                # Install all packages if many are requested, otherwise install popular pairs
-                # Popular language pairs: en<->es, en<->fr, en<->de, en<->it, en<->pt, en<->ru, en<->zh
-                popular_pairs = [
-                    "en", "es", "fr", "de", "it", "pt", "ru", "zh", "ja", "ar"
+                # Install all European language models
+                # European languages: Major and widely spoken languages across Europe
+                european_languages = [
+                    "en",   # English
+                    "es",   # Spanish
+                    "fr",   # French
+                    "de",   # German
+                    "it",   # Italian
+                    "pt",   # Portuguese
+                    "ru",   # Russian
+                    "pl",   # Polish
+                    "nl",   # Dutch
+                    "el",   # Greek
+                    "cs",   # Czech
+                    "ro",   # Romanian
+                    "hu",   # Hungarian
+                    "sv",   # Swedish
+                    "no",   # Norwegian
+                    "nb",   # Norwegian Bokmål
+                    "da",   # Danish
+                    "fi",   # Finnish
+                    "bg",   # Bulgarian
+                    "hr",   # Croatian
+                    "sr",   # Serbian
+                    "sk",   # Slovak
+                    "sl",   # Slovenian
+                    "lt",   # Lithuanian
+                    "lv",   # Latvian
+                    "et",   # Estonian
+                    "ga",   # Irish
+                    "ca",   # Catalan
+                    "uk",   # Ukrainian
+                    "be",   # Belarusian
+                    "is",   # Icelandic
+                    "mk",   # Macedonian
+                    "sq",   # Albanian
                 ]
                 
-                # Filter packages to popular language pairs
+                # Filter packages to European language pairs
                 packages_to_install = []
                 for package in available_packages:
-                    if package.from_code in popular_pairs and package.to_code in popular_pairs:
+                    if package.from_code in european_languages and package.to_code in european_languages:
                         packages_to_install.append(package)
                 
                 if packages_to_install:
-                    logger.info(f"Installing {len(packages_to_install)} popular translation models...")
+                    logger.info(f"Installing {len(packages_to_install)} European translation models...")
                     installed_count = 0
-                    for package in packages_to_install[:20]:  # Limit to 20 packages
+                    # Install all European language pairs (no limit)
+                    for package in packages_to_install:
                         try:
                             logger.info(f"Downloading {package.from_code} -> {package.to_code}...")
                             download_path = package.download()
@@ -81,7 +114,7 @@ class TranslationService:
                             logger.info(f"Successfully installed: {package.from_code} -> {package.to_code}")
                         except Exception as e:
                             logger.warning(f"Failed to install {package.from_code}->{package.to_code}: {e}")
-                    logger.info(f"Installed {installed_count} out of {min(len(packages_to_install), 20)} packages")
+                    logger.info(f"Installed {installed_count} out of {len(packages_to_install)} European language packages")
                 else:
                     logger.warning("No matching packages found to install")
             
