@@ -1,5 +1,14 @@
 # Quick Security Setup Guide
 
+## 🔑 Where to Configure API Keys
+
+**Important:** API keys need to be configured in TWO places:
+
+1. **Translation Server** (https://translate.shravani.group/) - Define which keys are valid
+2. **Your Websites/Apps** - Use the keys when making requests
+
+---
+
 ## 🔒 Enable API Key Authentication in 3 Steps
 
 ### Step 1: Generate API Keys
@@ -19,10 +28,14 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 API Key 1: a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
 ```
 
-### Step 2: Configure in Coolify
+### Step 2: Configure on Translation Server (Coolify)
 
-1. Go to your Coolify dashboard
-2. Select your translation server application
+**📍 Location:** Translation Server (https://translate.shravani.group/)
+
+**Purpose:** Tell the server which API keys are valid
+
+1. Go to your **Coolify dashboard**
+2. Select your **translation server application**
 3. Go to **Environment Variables**
 4. Add these variables:
 
@@ -38,7 +51,13 @@ API_KEYS=key1,key2,key3
 
 5. Click **Save** and **Restart** your application
 
-### Step 3: Update Your Code
+### Step 3: Use API Keys in Your Websites/Apps
+
+**📍 Location:** Your websites and web applications
+
+**Purpose:** Include the API key when calling the translation API
+
+**Option A: Store in Environment Variable (Recommended)**
 
 **JavaScript:**
 ```javascript
@@ -97,6 +116,22 @@ CORS_ORIGINS=https://yourwebsite.com,https://app.example.com
 ## 📚 More Information
 
 - Full guide: [SECURITY.md](../SECURITY.md)
+- Detailed setup: [API_KEY_SETUP.md](../API_KEY_SETUP.md)
 - Integration examples: [INTEGRATION_GUIDE.md](../INTEGRATION_GUIDE.md)
 - Coolify deployment: [COOLIFY_DEPLOYMENT.md](../COOLIFY_DEPLOYMENT.md)
+
+---
+
+## 📍 Quick Summary: Where to Configure
+
+| Location | What to Do | Purpose |
+|----------|------------|---------|
+| **Translation Server**<br/>(Coolify Dashboard) | Set environment variables:<br/>`API_KEY_REQUIRED=true`<br/>`API_KEYS=key1,key2` | Define which keys are valid |
+| **Your Websites/Apps**<br/>(Your code) | Include in requests:<br/>`X-API-Key: key1` | Authenticate your requests |
+
+**Think of it like a door:**
+- **Translation Server** = The lock (defines which keys work)
+- **Your Websites** = The keys (use them to unlock access)
+
+Both are needed! 🔐
 
