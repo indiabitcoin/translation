@@ -181,13 +181,20 @@ if (typeof module !== 'undefined' && module.exports) {
 
 // Usage example:
 /*
-// Without API key (if API_KEY_REQUIRED=false)
+// Option 1: Without API key (if API_KEY_REQUIRED=false)
 const client = new TranslationClient('https://translate.shravani.group/');
 
-// With API key (if API_KEY_REQUIRED=true) - RECOMMENDED FOR PRODUCTION
+// Option 2: With API key from environment variable (RECOMMENDED)
+// For Next.js: NEXT_PUBLIC_TRANSLATE_API_KEY
+// For React: REACT_APP_TRANSLATE_API_KEY
+// For Vue: VUE_APP_TRANSLATE_API_KEY
+const apiKey = process.env.NEXT_PUBLIC_TRANSLATE_API_KEY || 
+               process.env.REACT_APP_TRANSLATE_API_KEY || 
+               process.env.VUE_APP_TRANSLATE_API_KEY;
+
 const securedClient = new TranslationClient(
   'https://translate.shravani.group/',
-  'your-api-key-here'  // Get from environment variable, never hardcode!
+  apiKey  // ← From environment variable, never hardcode!
 );
 
 // Translate

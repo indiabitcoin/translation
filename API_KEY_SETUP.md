@@ -79,9 +79,9 @@ fetch('https://translate.shravani.group/translate', {
 
 ### Step 2: Use on Your Websites/Web Apps
 
-**Option A: Store in Environment Variable (Recommended)**
+**✅ RECOMMENDED: Store in Environment Variables (Never Hardcode!)**
 
-**For Node.js/Next.js:**
+**For Next.js:**
 ```javascript
 // .env.local (never commit this file!)
 NEXT_PUBLIC_TRANSLATE_API_KEY=abc123xyz
@@ -91,13 +91,13 @@ const apiKey = process.env.NEXT_PUBLIC_TRANSLATE_API_KEY;
 
 fetch('https://translate.shravani.group/translate', {
   headers: {
-    'X-API-Key': apiKey
+    'X-API-Key': apiKey  // ← From environment variable
   },
   // ...
 });
 ```
 
-**For React/Vue/Angular:**
+**For React (Create React App):**
 ```javascript
 // .env (never commit!)
 REACT_APP_TRANSLATE_API_KEY=abc123xyz
@@ -105,6 +105,27 @@ REACT_APP_TRANSLATE_API_KEY=abc123xyz
 // In your code
 const apiKey = process.env.REACT_APP_TRANSLATE_API_KEY;
 ```
+
+**For Vue.js:**
+```javascript
+// .env (never commit!)
+VUE_APP_TRANSLATE_API_KEY=abc123xyz
+
+// In your code
+const apiKey = process.env.VUE_APP_TRANSLATE_API_KEY;
+```
+
+**For Node.js/Express:**
+```javascript
+// .env (never commit!)
+TRANSLATE_API_KEY=abc123xyz
+
+// In your code
+require('dotenv').config();
+const apiKey = process.env.TRANSLATE_API_KEY;
+```
+
+**📚 See [ENVIRONMENT_VARIABLES_GUIDE.md](ENVIRONMENT_VARIABLES_GUIDE.md) for detailed platform-specific instructions!**
 
 **Option B: Use Different Keys for Different Apps**
 

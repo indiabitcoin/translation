@@ -57,15 +57,34 @@ API_KEYS=key1,key2,key3
 
 **Purpose:** Include the API key when calling the translation API
 
-**Option A: Store in Environment Variable (Recommended)**
+**✅ RECOMMENDED: Store in Environment Variables (Never Hardcode!)**
 
-**JavaScript:**
+**Step 1: Create `.env` file in your project:**
+```bash
+# .env (never commit this file!)
+# For Next.js:
+NEXT_PUBLIC_TRANSLATE_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
+
+# For React:
+# REACT_APP_TRANSLATE_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
+
+# For Vue:
+# VUE_APP_TRANSLATE_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
+```
+
+**Step 2: Use in your code:**
 ```javascript
+// Get API key from environment variable
+const apiKey = process.env.NEXT_PUBLIC_TRANSLATE_API_KEY || 
+               process.env.REACT_APP_TRANSLATE_API_KEY || 
+               process.env.VUE_APP_TRANSLATE_API_KEY;
+
+// Use in fetch
 const response = await fetch('https://translate.shravani.group/translate', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'X-API-Key': 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6'
+    'X-API-Key': apiKey  // ← From environment variable
   },
   body: JSON.stringify({
     q: "Hello",
@@ -77,12 +96,16 @@ const response = await fetch('https://translate.shravani.group/translate', {
 
 **Using the TranslationClient:**
 ```javascript
+const apiKey = process.env.NEXT_PUBLIC_TRANSLATE_API_KEY; // or REACT_APP_/VUE_APP_
+
 const client = new TranslationClient(
   'https://translate.shravani.group/',
-  'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6'
+  apiKey  // ← From environment variable, not hardcoded!
 );
 const translated = await client.translate("Hello", "en", "es");
 ```
+
+**📚 See [ENVIRONMENT_VARIABLES_GUIDE.md](ENVIRONMENT_VARIABLES_GUIDE.md) for detailed platform-specific instructions!**
 
 ## ✅ Test It Works
 

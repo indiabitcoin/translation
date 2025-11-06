@@ -6,6 +6,8 @@ A self-hosted translation server built with LibreTranslate API, providing REST e
 
 ⚠️ **Security Notice**: By default, the API is publicly accessible. See [SECURITY.md](SECURITY.md) to enable API key authentication.
 
+**✅ Best Practice:** Always use environment variables for API keys in your websites. See [ENVIRONMENT_VARIABLES_GUIDE.md](ENVIRONMENT_VARIABLES_GUIDE.md) for platform-specific instructions.
+
 ## Features
 
 - 🌐 RESTful API for translation services
