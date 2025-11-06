@@ -4,12 +4,14 @@ A self-hosted translation server built with LibreTranslate API, providing REST e
 
 🌐 **Live Server**: https://translate.shravani.group/
 
+⚠️ **Security Notice**: By default, the API is publicly accessible. See [SECURITY.md](SECURITY.md) to enable API key authentication.
+
 ## Features
 
 - 🌐 RESTful API for translation services
 - 🔄 Support for multiple languages
 - 🚀 Fast and efficient translation using Argos Translate (the engine behind LibreTranslate)
-- 🔒 Optional API key authentication
+- 🔒 Optional API key authentication (see [SECURITY.md](SECURITY.md))
 - 📦 Docker support
 - ⚙️ Configurable via environment variables
 

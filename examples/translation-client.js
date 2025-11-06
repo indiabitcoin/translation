@@ -181,27 +181,28 @@ if (typeof module !== 'undefined' && module.exports) {
 
 // Usage example:
 /*
-const client = new TranslationClient('http://your-server.com:5000');
+// Without API key (if API_KEY_REQUIRED=false)
+const client = new TranslationClient('https://translate.shravani.group/');
+
+// With API key (if API_KEY_REQUIRED=true) - RECOMMENDED FOR PRODUCTION
+const securedClient = new TranslationClient(
+  'https://translate.shravani.group/',
+  'your-api-key-here'  // Get from environment variable, never hardcode!
+);
 
 // Translate
-client.translate('Hello, world!', 'en', 'es')
+securedClient.translate('Hello, world!', 'en', 'es')
   .then(translated => console.log(translated))
   .catch(error => console.error('Error:', error));
 
 // Detect language
-client.detectLanguage('Bonjour')
+securedClient.detectLanguage('Bonjour')
   .then(result => console.log(result))
   .catch(error => console.error('Error:', error));
 
 // Get languages
-client.getLanguages()
+securedClient.getLanguages()
   .then(languages => console.log(languages))
   .catch(error => console.error('Error:', error));
-
-// With API key
-const securedClient = new TranslationClient(
-  'http://your-server.com:5000',
-  'your-api-key-here'
-);
 */
 
