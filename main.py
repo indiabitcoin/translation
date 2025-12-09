@@ -146,9 +146,30 @@ async def translate(
     )
     
     if translated_text is None:
+        # Get available languages for helpful error message
+        available_languages = translation_service.get_languages()
+        available_codes = []
+        if available_languages:
+            available_codes = [lang.get("code", "") for lang in available_languages]
+            available_codes = sorted([code for code in available_codes if code])
+        
+        error_detail = f"Translation failed: No translation model available for '{request.source}' -> '{request.target}'"
+        
+        if available_codes:
+            error_detail += f". Available languages: {', '.join(available_codes)}. "
+            error_detail += f"Use GET /languages to see all supported languages."
+        else:
+            error_detail += ". No translation models are installed. Please install models first."
+        
+        # Special message for UK regional languages
+        uk_languages = {"cy": "Welsh", "gd": "Scottish Gaelic", "kw": "Cornish", "gv": "Manx"}
+        if request.target in uk_languages:
+            error_detail += f" Note: {uk_languages[request.target]} ({request.target}) requires a community model. "
+            error_detail += "See COMMUNITY_MODELS.md for installation instructions."
+        
         raise HTTPException(
-            status_code=500,
-            detail="Translation failed"
+            status_code=400,
+            detail=error_detail
         )
     
     return TranslateResponse(translatedText=translated_text)

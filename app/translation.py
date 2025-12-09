@@ -255,7 +255,13 @@ class TranslationService:
                         current_text = argostranslate.translate.translate(current_text, from_lang, to_lang)
                     return current_text
                 else:
-                    logger.error(f"Cannot translate {source} -> {target}: no direct or indirect path available")
+                    # Get available languages for better error message
+                    available_langs = self.get_languages()
+                    available_codes = [lang["code"] for lang in available_langs] if available_langs else []
+                    logger.error(
+                        f"Cannot translate {source} -> {target}: no direct or indirect path available. "
+                        f"Available languages: {', '.join(sorted(available_codes))}"
+                    )
                     return None
             
             # Get the translation
