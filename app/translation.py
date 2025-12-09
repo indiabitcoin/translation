@@ -39,7 +39,27 @@ class TranslationService:
             import os
             os.makedirs(model_directory, exist_ok=True)
             # Argos Translate uses ~/.local/share/argos-translate/packages
-            # We'll create a symlink if needed
+            # Create symlink to custom directory so models are found
+            argos_dir = os.path.expanduser('~/.local/share/argos-translate')
+            os.makedirs(argos_dir, exist_ok=True)
+            packages_dir = os.path.join(argos_dir, 'packages')
+            
+            # Remove existing symlink or directory if it exists and is different
+            if os.path.exists(packages_dir):
+                if os.path.islink(packages_dir):
+                    current_target = os.readlink(packages_dir)
+                    if current_target != model_directory:
+                        os.remove(packages_dir)
+                        os.symlink(model_directory, packages_dir)
+                        logger.info(f"Updated symlink: {packages_dir} -> {model_directory}")
+                elif os.path.isdir(packages_dir) and not os.path.samefile(packages_dir, model_directory):
+                    # If it's a directory (not a symlink), we can't replace it easily
+                    # But we'll try to symlink anyway - Argos will use the symlink if it exists
+                    logger.warning(f"Packages directory exists as regular directory: {packages_dir}")
+            else:
+                # Create symlink if it doesn't exist
+                os.symlink(model_directory, packages_dir)
+                logger.info(f"Created symlink: {packages_dir} -> {model_directory}")
     
     def initialize(self, update_models: bool = False) -> bool:
         """
@@ -195,10 +215,43 @@ class TranslationService:
             # Get installed packages
             self._installed_packages = argostranslate.package.get_installed_packages()
             
-            if not self._installed_packages:
+            # Log detailed information about installed packages
+            if self._installed_packages:
+                logger.info(f"Found {len(self._installed_packages)} installed translation packages:")
+                # Group by language codes
+                all_languages = set()
+                uk_languages = {"cy", "gd", "kw", "gv"}
+                found_uk_languages = set()
+                
+                for pkg in self._installed_packages[:20]:  # Log first 20
+                    all_languages.add(pkg.from_code)
+                    all_languages.add(pkg.to_code)
+                    if pkg.from_code in uk_languages or pkg.to_code in uk_languages:
+                        found_uk_languages.add(pkg.from_code)
+                        found_uk_languages.add(pkg.to_code)
+                        logger.info(f"  ✓ {pkg.from_code} -> {pkg.to_code}")
+                
+                if len(self._installed_packages) > 20:
+                    logger.info(f"  ... and {len(self._installed_packages) - 20} more packages")
+                
+                if found_uk_languages:
+                    logger.info(f"✅ UK regional languages detected: {', '.join(sorted(found_uk_languages))}")
+                else:
+                    logger.info(f"Available languages: {', '.join(sorted(all_languages))}")
+            else:
                 logger.warning("No translation packages installed. Please install packages using:")
                 logger.warning("  python -m argostranslate.update")
                 logger.warning("Or set UPDATE_MODELS=true on first run")
+                
+                # Check if model directory exists and has files
+                if self.model_directory:
+                    import os
+                    if os.path.exists(self.model_directory):
+                        files = os.listdir(self.model_directory)
+                        if files:
+                            logger.warning(f"Model directory {self.model_directory} contains {len(files)} items but packages not detected.")
+                            logger.warning("This might indicate a symlink issue or model format problem.")
+                            logger.warning(f"Contents: {', '.join(files[:10])}")
             
             self._initialized = True
             logger.info(f"Translation service initialized with {len(self._installed_packages)} packages")

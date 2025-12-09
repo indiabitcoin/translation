@@ -105,6 +105,66 @@ async def health_check():
     return HealthResponse(status="ok")
 
 
+@app.get("/packages")
+async def get_packages(_: bool = Depends(verify_api_key)):
+    """Get detailed information about installed translation packages (diagnostic endpoint)."""
+    if not translation_service.is_initialized():
+        raise HTTPException(
+            status_code=503,
+            detail="Translation service not available"
+        )
+    
+    try:
+        import argostranslate.package
+        installed = argostranslate.package.get_installed_packages()
+        
+        packages_info = []
+        for pkg in installed:
+            packages_info.append({
+                "from_code": pkg.from_code,
+                "to_code": pkg.to_code,
+                "package_name": getattr(pkg, 'package_name', 'unknown'),
+                "package_version": getattr(pkg, 'package_version', 'unknown')
+            })
+        
+        # Check model directory
+        model_dir_info = {}
+        if translation_service.model_directory:
+            import os
+            model_dir = translation_service.model_directory
+            model_dir_info = {
+                "path": model_dir,
+                "exists": os.path.exists(model_dir),
+                "is_symlink": os.path.islink(model_dir) if os.path.exists(model_dir) else False,
+                "file_count": len(os.listdir(model_dir)) if os.path.exists(model_dir) and os.path.isdir(model_dir) else 0
+            }
+            
+            # Check symlink target
+            argos_dir = os.path.expanduser('~/.local/share/argos-translate/packages')
+            if os.path.exists(argos_dir):
+                if os.path.islink(argos_dir):
+                    model_dir_info["symlink_target"] = os.readlink(argos_dir)
+                model_dir_info["argos_packages_dir"] = argos_dir
+                model_dir_info["argos_dir_exists"] = True
+                if os.path.isdir(argos_dir):
+                    model_dir_info["argos_dir_file_count"] = len(os.listdir(argos_dir))
+        
+        return {
+            "total_packages": len(installed),
+            "packages": packages_info,
+            "model_directory": model_dir_info,
+            "uk_languages": {
+                "cy": any(p.from_code == "cy" or p.to_code == "cy" for p in installed),
+                "gd": any(p.from_code == "gd" or p.to_code == "gd" for p in installed),
+                "kw": any(p.from_code == "kw" or p.to_code == "kw" for p in installed),
+                "gv": any(p.from_code == "gv" or p.to_code == "gv" for p in installed),
+            }
+        }
+    except Exception as e:
+        logger.error(f"Failed to get packages info: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve package information: {str(e)}")
+
+
 @app.get("/languages", response_model=list[LanguageInfo])
 async def get_languages(_: bool = Depends(verify_api_key)):
     """Get list of supported languages."""
