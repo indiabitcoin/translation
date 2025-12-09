@@ -187,7 +187,7 @@ The server supports **70+ languages** by default, including:
 
 - **Additional Languages**: Bengali, Gujarati, Tamil, Telugu, Urdu, Persian, Armenian, Georgian, and 40+ more languages
 
-**Note**: UK regional languages (Welsh, Scottish Gaelic, Cornish, Manx) are **not available** in the default Argos Translate models. These languages require custom-trained models. If you need support for these languages, you would need to train custom models using Argos Translate's training tools or obtain community-contributed models.
+**Note**: UK regional languages (Welsh, Scottish Gaelic, Cornish, Manx) are **not available** in the default Argos Translate models. However, a **community-trained Welsh model is available**! See **[COMMUNITY_MODELS.md](COMMUNITY_MODELS.md)** for installation instructions. For other languages, you would need to train custom models using Argos Translate's training tools.
 
 To install **ALL available languages** from Argos Translate, set `INSTALL_ALL_LANGUAGES=true` (note: this will download significantly more models and take longer).
 
