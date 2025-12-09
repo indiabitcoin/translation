@@ -1,5 +1,6 @@
 """Translation service using Argos Translate (the engine behind LibreTranslate)."""
 from typing import Optional, List, Dict, Any
+from collections import deque
 import logging
 
 logger = logging.getLogger(__name__)
@@ -236,6 +237,27 @@ class TranslationService:
                     source = "en"  # Default fallback
                     logger.warning(f"Could not detect language, using default: {source}")
             
+            # Validate that we have a package for this language pair
+            if not self._has_translation_package(source, target):
+                logger.error(f"No translation package available for {source} -> {target}")
+                # Try to find an alternative path through intermediate languages
+                alternative_path = self._find_translation_path(source, target)
+                if alternative_path:
+                    logger.info(f"Using alternative translation path: {' -> '.join(alternative_path)}")
+                    # Translate through intermediate languages
+                    current_text = text
+                    for i in range(len(alternative_path) - 1):
+                        from_lang = alternative_path[i]
+                        to_lang = alternative_path[i + 1]
+                        if not self._has_translation_package(from_lang, to_lang):
+                            logger.error(f"Alternative path failed: no package for {from_lang} -> {to_lang}")
+                            return None
+                        current_text = argostranslate.translate.translate(current_text, from_lang, to_lang)
+                    return current_text
+                else:
+                    logger.error(f"Cannot translate {source} -> {target}: no direct or indirect path available")
+                    return None
+            
             # Get the translation
             translated_text = argostranslate.translate.translate(text, source, target)
             
@@ -245,8 +267,16 @@ class TranslationService:
                 logger.debug("HTML format requested, but only plain text translation is supported")
             
             return translated_text
+        except AttributeError as e:
+            # Handle the specific 'NoneType' object has no attribute 'code' error
+            if "'NoneType' object has no attribute 'code'" in str(e) or "'NoneType' object has no attribute" in str(e):
+                logger.error(f"Translation package not found for {source} -> {target}. Available packages: {self._get_available_language_pairs()}")
+                return None
+            raise
         except Exception as e:
             logger.error(f"Translation failed: {e}")
+            import traceback
+            logger.debug(f"Translation error traceback: {traceback.format_exc()}")
             return None
     
     def get_languages(self) -> Optional[List[Dict[str, Any]]]:
@@ -440,4 +470,67 @@ class TranslationService:
     def is_initialized(self) -> bool:
         """Check if the service is initialized."""
         return self._initialized
+    
+    def _has_translation_package(self, from_code: str, to_code: str) -> bool:
+        """Check if a translation package exists for the given language pair."""
+        if not self._initialized:
+            return False
+        
+        for package in self._installed_packages:
+            if package.from_code == from_code and package.to_code == to_code:
+                return True
+        return False
+    
+    def _get_available_language_pairs(self) -> List[str]:
+        """Get list of available language pairs as strings."""
+        if not self._initialized:
+            return []
+        
+        pairs = []
+        for package in self._installed_packages:
+            pairs.append(f"{package.from_code}->{package.to_code}")
+        return pairs
+    
+    def _find_translation_path(self, from_code: str, to_code: str, max_depth: int = 2) -> Optional[List[str]]:
+        """
+        Find a translation path through intermediate languages.
+        Uses breadth-first search to find the shortest path.
+        
+        Args:
+            from_code: Source language code
+            to_code: Target language code
+            max_depth: Maximum number of intermediate languages (default: 2)
+        
+        Returns:
+            List of language codes representing the path, or None if no path found
+        """
+        if not self._initialized:
+            return None
+        
+        # If direct path exists, use it
+        if self._has_translation_package(from_code, to_code):
+            return [from_code, to_code]
+        
+        # BFS to find shortest path
+        # Queue: (current_lang, path_so_far)
+        queue = deque([(from_code, [from_code])])
+        visited = {from_code}
+        
+        while queue and len(queue[0][1]) <= max_depth + 1:
+            current_lang, path = queue.popleft()
+            
+            # Check all packages that start from current_lang
+            for package in self._installed_packages:
+                if package.from_code == current_lang:
+                    next_lang = package.to_code
+                    
+                    if next_lang == to_code:
+                        # Found path!
+                        return path + [to_code]
+                    
+                    if next_lang not in visited and len(path) < max_depth + 1:
+                        visited.add(next_lang)
+                        queue.append((next_lang, path + [next_lang]))
+        
+        return None
 
