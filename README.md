@@ -296,5 +296,10 @@ LibreTranslate/
 
 ## License
 
-This project uses Argos Translate, which is licensed under the AGPL-3.0 license.
+This project uses [Argos Translate](https://github.com/argosopentech/argos-translate), which is licensed under the MIT License or Creative Commons CC0.
+
+**Credits:**
+- Built on [Argos Translate](https://github.com/argosopentech/argos-translate) - Open-source offline translation library
+- Powered by OpenNMT for neural machine translation
+- Package index: [argospm-index](https://github.com/argosopentech/argospm-index)
 

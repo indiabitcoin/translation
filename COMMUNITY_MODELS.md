@@ -2,6 +2,10 @@
 
 This guide explains how to install community-contributed translation models that are not included in the default Argos Translate package index.
 
+**Official Argos Translate Repository**: [https://github.com/argosopentech/argos-translate](https://github.com/argosopentech/argos-translate)
+
+The official package index (accessed via `argostranslate.package.get_available_packages()`) contains pre-trained models for many languages, but not all languages are included. Community-contributed models can extend support to additional languages.
+
 ## Available Community Models
 
 ### ✅ Welsh (cy) - Available
@@ -154,10 +158,25 @@ If you train a model for an unsupported language:
 4. **Provide both directions**: Upload both `lang1-lang2` and `lang2-lang1` models
 5. **Include documentation**: License, training data source, quality metrics
 
+## Official Package Index
+
+The official Argos Translate package index is managed in the [argospm-index](https://github.com/argosopentech/argospm-index) repository. This index contains metadata and download links for all officially supported language pairs.
+
+**To see what languages are officially supported:**
+1. Check the [Argos Translate README](https://github.com/argosopentech/argos-translate#supported-languages)
+2. Run `argostranslate.package.get_available_packages()` in Python
+3. Browse the [package index repository](https://github.com/argosopentech/argospm-index)
+
+**Requesting a language:** The Argos Translate project accepts language requests. If you need a language that's not in the official index, you can:
+- Request it through the [LibreTranslate Community Forum](https://community.libretranslate.com/)
+- Train and contribute a model yourself
+- Use community-contributed models (like the Welsh model)
+
 ## Resources
 
+- [Argos Translate Repository](https://github.com/argosopentech/argos-translate) - Main project repository
+- [Argos Package Index](https://github.com/argosopentech/argospm-index) - Official package index
 - [Argos Train](https://github.com/argosopentech/argos-train) - Training toolkit
 - [Locomotive](https://github.com/LibreTranslate/Locomotive) - Model conversion tools
-- [LibreTranslate Community Forum](https://community.libretranslate.com/) - Community discussions
-- [Argos Translate Documentation](https://github.com/argosopentech/argos-translate)
+- [LibreTranslate Community Forum](https://community.libretranslate.com/) - Community discussions and model sharing
 
