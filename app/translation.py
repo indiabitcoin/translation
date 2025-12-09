@@ -103,11 +103,8 @@ class TranslationService:
                         "is",   # Icelandic
                         "mk",   # Macedonian
                         "sq",   # Albanian
-                        # United Kingdom regional languages
-                        "cy",   # Welsh (Cymraeg)
-                        "gd",   # Scottish Gaelic (Gàidhlig)
-                        "kw",   # Cornish (Kernewek)
-                        "gv",   # Manx (Gaelg)
+                        # Note: UK regional languages (cy, gd, kw, gv) are not available in default Argos Translate models
+                        # They require custom trained models. See README for details.
                         # Major world languages
                         "zh",   # Chinese
                         "ja",   # Japanese
@@ -328,11 +325,7 @@ class TranslationService:
             "is": "Icelandic",
             "mk": "Macedonian",
             "sq": "Albanian",
-            # United Kingdom regional languages
-            "cy": "Welsh",
-            "gd": "Scottish Gaelic",
-            "kw": "Cornish",
-            "gv": "Manx",
+            # Note: UK regional languages (cy, gd, kw, gv) require custom models
             # Major world languages
             "zh": "Chinese",
             "ja": "Japanese",
