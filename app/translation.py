@@ -2,8 +2,13 @@
 from typing import Optional, List, Dict, Any
 from collections import deque
 import logging
+import time
 
 logger = logging.getLogger(__name__)
+
+# Cache for recent error messages to reduce log spam
+_error_cache: Dict[str, float] = {}
+_ERROR_CACHE_TTL = 60  # Log same error at most once per 60 seconds
 
 try:
     import argostranslate.package
@@ -239,6 +244,11 @@ class TranslationService:
             
             # Validate that we have a package for this language pair
             if not self._has_translation_package(source, target):
+                error_key = f"no_package_{source}_{target}"
+                if not self._should_log_error(error_key):
+                    # Silently return None if we've logged this error recently
+                    return None
+                
                 logger.error(f"No translation package available for {source} -> {target}")
                 # Try to find an alternative path through intermediate languages
                 alternative_path = self._find_translation_path(source, target)
@@ -250,12 +260,14 @@ class TranslationService:
                         from_lang = alternative_path[i]
                         to_lang = alternative_path[i + 1]
                         if not self._has_translation_package(from_lang, to_lang):
-                            logger.error(f"Alternative path failed: no package for {from_lang} -> {to_lang}")
+                            path_error_key = f"no_package_{from_lang}_{to_lang}"
+                            if self._should_log_error(path_error_key):
+                                logger.error(f"Alternative path failed: no package for {from_lang} -> {to_lang}")
                             return None
                         current_text = argostranslate.translate.translate(current_text, from_lang, to_lang)
                     return current_text
                 else:
-                    # Get available languages for better error message
+                    # Get available languages for better error message (only log once)
                     available_langs = self.get_languages()
                     available_codes = [lang["code"] for lang in available_langs] if available_langs else []
                     logger.error(
@@ -476,6 +488,28 @@ class TranslationService:
     def is_initialized(self) -> bool:
         """Check if the service is initialized."""
         return self._initialized
+    
+    def _should_log_error(self, error_key: str) -> bool:
+        """
+        Check if an error should be logged (to prevent log spam).
+        Returns True if error should be logged, False if it was recently logged.
+        """
+        global _error_cache
+        current_time = time.time()
+        
+        # Clean old entries
+        _error_cache = {
+            k: v for k, v in _error_cache.items()
+            if current_time - v < _ERROR_CACHE_TTL
+        }
+        
+        # Check if this error was recently logged
+        if error_key in _error_cache:
+            return False
+        
+        # Mark this error as logged
+        _error_cache[error_key] = current_time
+        return True
     
     def _has_translation_package(self, from_code: str, to_code: str) -> bool:
         """Check if a translation package exists for the given language pair."""
