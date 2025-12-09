@@ -56,54 +56,125 @@ class TranslationService:
                 argostranslate.package.update_package_index()
                 available_packages = argostranslate.package.get_available_packages()
                 
-                # Install all European language models
-                # European languages: Major and widely spoken languages across Europe
-                european_languages = [
-                    "en",   # English
-                    "es",   # Spanish
-                    "fr",   # French
-                    "de",   # German
-                    "it",   # Italian
-                    "pt",   # Portuguese
-                    "ru",   # Russian
-                    "pl",   # Polish
-                    "nl",   # Dutch
-                    "el",   # Greek
-                    "cs",   # Czech
-                    "ro",   # Romanian
-                    "hu",   # Hungarian
-                    "sv",   # Swedish
-                    "no",   # Norwegian
-                    "nb",   # Norwegian Bokmål
-                    "da",   # Danish
-                    "fi",   # Finnish
-                    "bg",   # Bulgarian
-                    "hr",   # Croatian
-                    "sr",   # Serbian
-                    "sk",   # Slovak
-                    "sl",   # Slovenian
-                    "lt",   # Lithuanian
-                    "lv",   # Latvian
-                    "et",   # Estonian
-                    "ga",   # Irish
-                    "ca",   # Catalan
-                    "uk",   # Ukrainian
-                    "be",   # Belarusian
-                    "is",   # Icelandic
-                    "mk",   # Macedonian
-                    "sq",   # Albanian
-                ]
+                # Get languages to install from environment or use default comprehensive list
+                # If INSTALL_ALL_LANGUAGES=true, install all available languages
+                import os
+                install_all = os.getenv("INSTALL_ALL_LANGUAGES", "false").lower() == "true"
                 
-                # Filter packages to European language pairs
-                packages_to_install = []
-                for package in available_packages:
-                    if package.from_code in european_languages and package.to_code in european_languages:
-                        packages_to_install.append(package)
+                if install_all:
+                    # Install ALL available language pairs
+                    logger.info("INSTALL_ALL_LANGUAGES=true: Installing all available language pairs...")
+                    packages_to_install = available_packages
+                else:
+                    # Default: Install comprehensive set of popular global languages
+                    # Includes European + major world languages
+                    supported_languages = [
+                        # European languages
+                        "en",   # English
+                        "es",   # Spanish
+                        "fr",   # French
+                        "de",   # German
+                        "it",   # Italian
+                        "pt",   # Portuguese
+                        "ru",   # Russian
+                        "pl",   # Polish
+                        "nl",   # Dutch
+                        "el",   # Greek
+                        "cs",   # Czech
+                        "ro",   # Romanian
+                        "hu",   # Hungarian
+                        "sv",   # Swedish
+                        "no",   # Norwegian
+                        "nb",   # Norwegian Bokmål
+                        "da",   # Danish
+                        "fi",   # Finnish
+                        "bg",   # Bulgarian
+                        "hr",   # Croatian
+                        "sr",   # Serbian
+                        "sk",   # Slovak
+                        "sl",   # Slovenian
+                        "lt",   # Lithuanian
+                        "lv",   # Latvian
+                        "et",   # Estonian
+                        "ga",   # Irish
+                        "ca",   # Catalan
+                        "uk",   # Ukrainian
+                        "be",   # Belarusian
+                        "is",   # Icelandic
+                        "mk",   # Macedonian
+                        "sq",   # Albanian
+                        # United Kingdom regional languages
+                        "cy",   # Welsh (Cymraeg)
+                        "gd",   # Scottish Gaelic (Gàidhlig)
+                        "kw",   # Cornish (Kernewek)
+                        "gv",   # Manx (Gaelg)
+                        # Major world languages
+                        "zh",   # Chinese
+                        "ja",   # Japanese
+                        "ko",   # Korean
+                        "ar",   # Arabic
+                        "hi",   # Hindi
+                        "tr",   # Turkish
+                        "he",   # Hebrew
+                        "th",   # Thai
+                        "vi",   # Vietnamese
+                        "id",   # Indonesian
+                        "ms",   # Malay
+                        "tl",   # Tagalog/Filipino
+                        "sw",   # Swahili
+                        "af",   # Afrikaans
+                        "az",   # Azerbaijani
+                        "eu",   # Basque
+                        "bn",   # Bengali
+                        "bs",   # Bosnian
+                        "br",   # Breton
+                        "eo",   # Esperanto
+                        "fa",   # Persian/Farsi
+                        "gl",   # Galician
+                        "gu",   # Gujarati
+                        "ha",   # Hausa
+                        "haw",  # Hawaiian
+                        "hy",   # Armenian
+                        "ig",   # Igbo
+                        "is",   # Icelandic
+                        "jw",   # Javanese
+                        "ka",   # Georgian
+                        "km",   # Khmer
+                        "kn",   # Kannada
+                        "kk",   # Kazakh
+                        "ky",   # Kyrgyz
+                        "lo",   # Lao
+                        "lb",   # Luxembourgish
+                        "ml",   # Malayalam
+                        "mr",   # Marathi
+                        "mn",   # Mongolian
+                        "my",   # Myanmar/Burmese
+                        "ne",   # Nepali
+                        "ps",   # Pashto
+                        "pa",   # Punjabi
+                        "si",   # Sinhala
+                        "so",   # Somali
+                        "su",   # Sundanese
+                        "tg",   # Tajik
+                        "ta",   # Tamil
+                        "te",   # Telugu
+                        "ur",   # Urdu
+                        "uz",   # Uzbek
+                        "yi",   # Yiddish
+                        "yo",   # Yoruba
+                        "zu",   # Zulu
+                    ]
+                    
+                    # Filter packages to supported language pairs
+                    packages_to_install = []
+                    for package in available_packages:
+                        if package.from_code in supported_languages and package.to_code in supported_languages:
+                            packages_to_install.append(package)
                 
                 if packages_to_install:
-                    logger.info(f"Installing {len(packages_to_install)} European translation models...")
+                    logger.info(f"Installing {len(packages_to_install)} translation models...")
                     installed_count = 0
-                    # Install all European language pairs (no limit)
+                    # Install all language pairs
                     for package in packages_to_install:
                         try:
                             logger.info(f"Downloading {package.from_code} -> {package.to_code}...")
@@ -114,7 +185,7 @@ class TranslationService:
                             logger.info(f"Successfully installed: {package.from_code} -> {package.to_code}")
                         except Exception as e:
                             logger.warning(f"Failed to install {package.from_code}->{package.to_code}: {e}")
-                    logger.info(f"Installed {installed_count} out of {len(packages_to_install)} European language packages")
+                    logger.info(f"Installed {installed_count} out of {len(packages_to_install)} language packages")
                 else:
                     logger.warning("No matching packages found to install")
             
@@ -221,8 +292,9 @@ class TranslationService:
     
     def _get_language_name(self, code: str) -> str:
         """Get human-readable language name from code."""
-        # Common language names mapping
+        # Comprehensive language names mapping
         language_names = {
+            # European languages
             "en": "English",
             "es": "Spanish",
             "fr": "French",
@@ -230,22 +302,91 @@ class TranslationService:
             "it": "Italian",
             "pt": "Portuguese",
             "ru": "Russian",
+            "pl": "Polish",
+            "nl": "Dutch",
+            "el": "Greek",
+            "cs": "Czech",
+            "ro": "Romanian",
+            "hu": "Hungarian",
+            "sv": "Swedish",
+            "no": "Norwegian",
+            "nb": "Norwegian Bokmål",
+            "da": "Danish",
+            "fi": "Finnish",
+            "bg": "Bulgarian",
+            "hr": "Croatian",
+            "sr": "Serbian",
+            "sk": "Slovak",
+            "sl": "Slovenian",
+            "lt": "Lithuanian",
+            "lv": "Latvian",
+            "et": "Estonian",
+            "ga": "Irish",
+            "ca": "Catalan",
+            "uk": "Ukrainian",
+            "be": "Belarusian",
+            "is": "Icelandic",
+            "mk": "Macedonian",
+            "sq": "Albanian",
+            # United Kingdom regional languages
+            "cy": "Welsh",
+            "gd": "Scottish Gaelic",
+            "kw": "Cornish",
+            "gv": "Manx",
+            # Major world languages
             "zh": "Chinese",
             "ja": "Japanese",
             "ko": "Korean",
             "ar": "Arabic",
             "hi": "Hindi",
-            "nl": "Dutch",
-            "pl": "Polish",
-            "uk": "Ukrainian",
             "tr": "Turkish",
-            "cs": "Czech",
-            "ro": "Romanian",
-            "sv": "Swedish",
-            "fi": "Finnish",
-            "da": "Danish",
-            "no": "Norwegian",
             "he": "Hebrew",
+            "th": "Thai",
+            "vi": "Vietnamese",
+            "id": "Indonesian",
+            "ms": "Malay",
+            "tl": "Tagalog",
+            "sw": "Swahili",
+            "af": "Afrikaans",
+            "az": "Azerbaijani",
+            "eu": "Basque",
+            "bn": "Bengali",
+            "bs": "Bosnian",
+            "br": "Breton",
+            "eo": "Esperanto",
+            "fa": "Persian",
+            "gl": "Galician",
+            "gu": "Gujarati",
+            "ha": "Hausa",
+            "haw": "Hawaiian",
+            "hy": "Armenian",
+            "ig": "Igbo",
+            "jw": "Javanese",
+            "ka": "Georgian",
+            "km": "Khmer",
+            "kn": "Kannada",
+            "kk": "Kazakh",
+            "ky": "Kyrgyz",
+            "lo": "Lao",
+            "lb": "Luxembourgish",
+            "ml": "Malayalam",
+            "mr": "Marathi",
+            "mn": "Mongolian",
+            "my": "Myanmar",
+            "ne": "Nepali",
+            "ps": "Pashto",
+            "pa": "Punjabi",
+            "si": "Sinhala",
+            "so": "Somali",
+            "su": "Sundanese",
+            "tg": "Tajik",
+            "ta": "Tamil",
+            "te": "Telugu",
+            "ur": "Urdu",
+            "uz": "Uzbek",
+            "yi": "Yiddish",
+            "yo": "Yoruba",
+            "zu": "Zulu",
         }
         return language_names.get(code, code.upper())
     

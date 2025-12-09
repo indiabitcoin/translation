@@ -11,11 +11,12 @@ A self-hosted translation server built with LibreTranslate API, providing REST e
 ## Features
 
 - 🌐 RESTful API for translation services
-- 🔄 Support for multiple languages
+- 🌍 Support for 80+ languages including European, major world languages, and UK regional languages (Welsh, Scottish Gaelic, Cornish, Manx)
 - 🚀 Fast and efficient translation using Argos Translate (the engine behind LibreTranslate)
 - 🔒 Optional API key authentication (see [SECURITY.md](SECURITY.md))
 - 📦 Docker support
 - ⚙️ Configurable via environment variables
+- 🔄 Auto-install models on first run or install all available languages
 
 ## Installation
 
@@ -168,12 +169,27 @@ Environment variables can be set in the `.env` file:
 
 - `HOST`: Server host (default: `0.0.0.0`)
 - `PORT`: Server port (default: `5000`)
-- `LOAD_ONLY`: Comma-separated language codes to load (e.g., `en,es,fr`)
+- `LOAD_ONLY`: Comma-separated language codes to load (e.g., `en,es,fr`) - limits which languages are loaded at startup
 - `UPDATE_MODELS`: Whether to update translation models on startup (default: `false`)
+- `INSTALL_ALL_LANGUAGES`: Install ALL available language pairs from Argos Translate (default: `false`). If `false`, installs a curated set of 80+ languages including European, major world languages, and UK regional languages.
 - `API_KEY_REQUIRED`: Require API key for requests (default: `false`)
 - `API_KEYS`: Comma-separated list of valid API keys
 - `CORS_ORIGINS`: CORS allowed origins (default: `*`)
 - `ARGOS_TRANSLATE_PACKAGES`: Custom directory for models (default: `/app/models` for Docker)
+
+### Supported Languages
+
+The server supports **80+ languages** by default, including:
+
+- **European Languages**: English, Spanish, French, German, Italian, Portuguese, Russian, Polish, Dutch, Greek, Czech, Romanian, Hungarian, Swedish, Norwegian, Danish, Finnish, Bulgarian, Croatian, Serbian, Slovak, Slovenian, Lithuanian, Latvian, Estonian, Irish, Catalan, Ukrainian, Belarusian, Icelandic, Macedonian, Albanian
+
+- **UK Regional Languages**: Welsh (Cymraeg), Scottish Gaelic (Gàidhlig), Cornish (Kernewek), Manx (Gaelg)
+
+- **Major World Languages**: Chinese, Japanese, Korean, Arabic, Hindi, Turkish, Hebrew, Thai, Vietnamese, Indonesian, Malay, Tagalog, Swahili, Afrikaans, and many more
+
+- **Additional Languages**: Bengali, Gujarati, Tamil, Telugu, Urdu, Persian, Armenian, Georgian, and 40+ more languages
+
+To install **ALL available languages** from Argos Translate, set `INSTALL_ALL_LANGUAGES=true` (note: this will download significantly more models and take longer).
 
 ## Integration with Web Apps
 
