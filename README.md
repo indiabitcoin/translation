@@ -261,6 +261,38 @@ async function translateElement(element, targetLang) {
 }
 ```
 
+## Documentation
+
+### Comprehensive Documentation
+
+- **[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)** - Complete technical documentation including:
+  - System architecture and component design
+  - Technical specifications and performance metrics
+  - Deployment architecture and requirements
+  - Security architecture
+  - Troubleshooting guide
+
+- **[BUSINESS_DOCUMENTATION.md](BUSINESS_DOCUMENTATION.md)** - Business documentation including:
+  - Executive summary and business case
+  - ROI analysis and cost comparison
+  - Use cases and target markets
+  - Competitive advantages
+  - Implementation roadmap
+
+- **[API_REFERENCE.md](API_REFERENCE.md)** - Complete API reference including:
+  - All endpoints with detailed specifications
+  - Request/response formats
+  - Authentication methods
+  - Code examples in multiple languages
+  - Error handling guide
+
+### Quick Reference Guides
+
+- **[SECURITY.md](SECURITY.md)** - Security setup and API key configuration
+- **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** - Integration examples for various platforms
+- **[COOLIFY_DEPLOYMENT.md](COOLIFY_DEPLOYMENT.md)** - Deployment guide for Coolify
+- **[COMMUNITY_MODELS.md](COMMUNITY_MODELS.md)** - Guide for installing community models
+
 ## Development
 
 ### Project Structure
