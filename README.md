@@ -191,6 +191,29 @@ The server supports **70+ languages** by default, including:
 
 To install **ALL available languages** from Argos Translate, set `INSTALL_ALL_LANGUAGES=true` (note: this will download significantly more models and take longer).
 
+### World-Class Language Coverage
+
+To achieve **world-class translation coverage** with maximum regional language support:
+
+1. **Discover all available models:**
+   ```bash
+   python discover_all_models.py
+   ```
+   This generates a report showing all available languages and regional language coverage.
+
+2. **Install all official models:**
+   ```bash
+   python install_all_models.py --model-dir /app/models
+   ```
+   Or set `INSTALL_ALL_LANGUAGES=true` environment variable.
+
+3. **Add community models for regional languages:**
+   See **[REGIONAL_LANGUAGES.md](REGIONAL_LANGUAGES.md)** for comprehensive guide on:
+   - Discovering available models
+   - Installing community-contributed models
+   - Training custom models for unsupported languages
+   - Complete list of regional languages by category
+
 ## Integration with Web Apps
 
 This translation server can be easily integrated into any web application or website. See **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** for comprehensive examples including:
