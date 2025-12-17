@@ -88,9 +88,31 @@ class TranslationService:
                 install_all = os.getenv("INSTALL_ALL_LANGUAGES", "false").lower() == "true"
                 
                 if install_all:
-                    # Install ALL available language pairs
-                    logger.info("INSTALL_ALL_LANGUAGES=true: Installing all available language pairs...")
-                    packages_to_install = available_packages
+                    # Install ALL available language pairs for maximum coverage
+                    # This enables translation between ANY language to ANY language
+                    logger.info("INSTALL_ALL_LANGUAGES=true: Installing ALL available language pairs for maximum translation coverage...")
+                    
+                    # Get already installed pairs to avoid duplicates
+                    installed_pairs = set()
+                    try:
+                        current_installed = argostranslate.package.get_installed_packages()
+                        installed_pairs = set((p.from_code, p.to_code) for p in current_installed)
+                        logger.info(f"Found {len(installed_pairs)} already installed packages")
+                    except Exception as e:
+                        logger.warning(f"Could not check installed packages: {e}")
+                    
+                    # Filter out already installed packages
+                    packages_to_install = [
+                        pkg for pkg in available_packages
+                        if (pkg.from_code, pkg.to_code) not in installed_pairs
+                    ]
+                    
+                    if installed_pairs:
+                        logger.info(f"Installing {len(packages_to_install)} new packages (total available: {len(available_packages)})...")
+                        logger.info(f"This will enable translation between ANY language to ANY language")
+                    else:
+                        packages_to_install = available_packages
+                        logger.info(f"Installing all {len(packages_to_install)} available packages for complete language coverage...")
                 else:
                     # Default: Install comprehensive set of popular global languages
                     # Includes European + major world languages
