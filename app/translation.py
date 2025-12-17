@@ -614,7 +614,7 @@ class TranslationService:
             pairs.append(f"{package.from_code}->{package.to_code}")
         return pairs
     
-    def _find_translation_path(self, from_code: str, to_code: str, max_depth: int = 2) -> Optional[List[str]]:
+    def _find_translation_path(self, from_code: str, to_code: str, max_depth: int = 3) -> Optional[List[str]]:
         """
         Find a translation path through intermediate languages.
         Uses breadth-first search to find the shortest path.
