@@ -3,8 +3,6 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Header, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from typing import Optional
 from pydantic import BaseModel
 
@@ -385,24 +383,19 @@ async def upgrade_subscription(request: UpgradeRequest, user: dict = Depends(get
         logger.error(f"Upgrade error: {e}")
         raise HTTPException(status_code=500, detail="Failed to upgrade plan")
 
-# Serve static files
-import os
-static_dir = os.path.join(os.path.dirname(__file__), 'frontend')
-css_dir = os.path.join(static_dir, 'css')
-js_dir = os.path.join(static_dir, 'js')
-
-if os.path.exists(css_dir):
-    app.mount("/static/css", StaticFiles(directory=css_dir), name="css")
-if os.path.exists(js_dir):
-    app.mount("/static/js", StaticFiles(directory=js_dir), name="js")
+# Backend API only - Frontend is served separately
+# Frontend should be deployed at: https://translate.shravani.group/
+# Backend API is at: https://api.shravani.group/
 
 @app.get("/")
-async def serve_frontend():
-    """Serve the frontend index page."""
-    index_path = os.path.join(static_dir, "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return {"message": "Frontend not found. Please build the frontend."}
+async def root():
+    """API root endpoint."""
+    return {
+        "message": "LibreTranslate API Server",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "frontend": "https://translate.shravani.group/"
+    }
 
 
 if __name__ == "__main__":

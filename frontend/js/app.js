@@ -1,4 +1,9 @@
 // Application State
+// API Server URL - Update this to match your backend server
+const API_BASE_URL = window.location.hostname === 'translate.shravani.group' 
+    ? 'https://api.shravani.group'  // Production: separate API server
+    : window.location.origin;  // Development: same server
+
 const AppState = {
     user: null,
     plan: 'free',
@@ -7,7 +12,7 @@ const AppState = {
         limit: 10000
     },
     languages: [],
-    apiUrl: window.location.origin
+    apiUrl: API_BASE_URL
 };
 
 // Initialize App

@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     api_keys: Optional[str] = None
     
     # CORS Configuration
-    cors_origins: str = "*"
+    cors_origins: str = "*"  # Default: allow all. Set to frontend domain for production (e.g., "https://translate.shravani.group")
     
     # Model Storage (for Coolify/persistent volumes)
     model_directory: Optional[str] = None
