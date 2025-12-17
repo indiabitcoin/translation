@@ -115,6 +115,20 @@ def verify_api_key(api_key: Optional[str] = Header(None, alias="X-API-Key")) -> 
     raise HTTPException(status_code=403, detail="Invalid API key")
 
 
+def verify_api_key_optional(api_key: Optional[str] = Header(None, alias="X-API-Key")) -> Optional[dict]:
+    """Optional API key verification for public endpoints. Returns user dict if authenticated, None otherwise."""
+    # Always allow access, but track usage if API key is provided
+    if api_key:
+        user = get_user_by_api_key(api_key)
+        if user:
+            return user
+        # Check configured API keys for tracking
+        valid_keys = settings.valid_api_keys
+        if valid_keys and api_key in valid_keys:
+            return None  # Valid system API key, no user tracking
+    return None
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
@@ -182,8 +196,8 @@ async def get_packages(user: Optional[dict] = Depends(verify_api_key)):
 
 
 @app.get("/languages", response_model=list[LanguageInfo])
-async def get_languages(user: Optional[dict] = Depends(verify_api_key)):
-    """Get list of supported languages."""
+async def get_languages(user: Optional[dict] = Depends(verify_api_key_optional)):
+    """Get list of supported languages. Public endpoint - no authentication required."""
     languages = translation_service.get_languages()
     if languages is None:
         raise HTTPException(status_code=500, detail="Failed to retrieve languages")
