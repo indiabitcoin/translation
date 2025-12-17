@@ -1,8 +1,10 @@
 [phases.setup]
-nixPkgs = ["python312", "python312Packages.pip", "cmake", "pkg-config", "gcc", "gnumake", "binutils"]
+nixPkgs = ["python312", "python312Packages.pip"]
 
 [phases.install]
 cmds = [
+    "sudo apt-get update",
+    "sudo apt-get install -y --no-install-recommends build-essential cmake pkg-config",
     "python3 -m venv /opt/venv",
     ". /opt/venv/bin/activate && pip install --no-cache-dir --upgrade pip setuptools wheel",
     ". /opt/venv/bin/activate && pip install --no-cache-dir -r requirements.txt"
