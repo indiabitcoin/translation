@@ -362,10 +362,15 @@ class TranslationService:
             return None
         
         try:
+            # Refresh installed packages list to get latest packages
+            # This ensures we detect newly installed packages
+            import argostranslate.package
+            current_installed = argostranslate.package.get_installed_packages()
+            
             languages_dict = {}
             
             # Get unique languages from installed packages
-            for package in self._installed_packages:
+            for package in current_installed:
                 from_code = package.from_code
                 to_code = package.to_code
                 
@@ -382,6 +387,9 @@ class TranslationService:
                 {"code": code, "name": name}
                 for code, name in sorted(languages_dict.items())
             ]
+            
+            # Update cached installed packages list
+            self._installed_packages = current_installed
             
             return languages
         except Exception as e:
