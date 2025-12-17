@@ -56,6 +56,10 @@ async def lifespan(app: FastAPI):
             if not installed:
                 logger.info("No models found. Auto-installing default models...")
                 update_models = True
+            elif settings.update_models:
+                # If UPDATE_MODELS=true, install/update models even if some exist
+                logger.info("UPDATE_MODELS=true: Installing/updating models...")
+                update_models = True
         except Exception as e:
             logger.warning(f"Could not check installed packages: {e}")
     
@@ -133,6 +137,55 @@ def verify_api_key_optional(api_key: Optional[str] = Header(None, alias="X-API-K
 async def health_check():
     """Health check endpoint."""
     return HealthResponse(status="ok")
+
+
+@app.post("/admin/install-models")
+async def install_models(
+    force: bool = False,
+    user: Optional[dict] = Depends(verify_api_key)
+):
+    """
+    Trigger model installation/update.
+    Requires API key authentication.
+    
+    Args:
+        force: If True, install even if models exist
+    """
+    import os
+    import argostranslate.package
+    
+    try:
+        # Check if models should be installed
+        installed = argostranslate.package.get_installed_packages()
+        install_all = os.getenv("INSTALL_ALL_LANGUAGES", "false").lower() == "true"
+        
+        if not force and installed and not install_all:
+            return {
+                "message": "Models already installed. Set force=true or INSTALL_ALL_LANGUAGES=true to install more.",
+                "installed_count": len(installed),
+                "install_all": install_all
+            }
+        
+        # Trigger model installation
+        logger.info("Manual model installation triggered via API")
+        success = translation_service.initialize(update_models=True)
+        
+        if success:
+            final_installed = argostranslate.package.get_installed_packages()
+            languages = translation_service.get_languages()
+            
+            return {
+                "message": "Model installation completed",
+                "installed_packages": len(final_installed),
+                "supported_languages": len(languages) if languages else 0,
+                "languages": languages
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Model installation failed")
+            
+    except Exception as e:
+        logger.error(f"Failed to install models: {e}")
+        raise HTTPException(status_code=500, detail=f"Model installation failed: {str(e)}")
 
 
 @app.get("/packages")
