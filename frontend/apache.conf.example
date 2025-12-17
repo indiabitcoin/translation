@@ -1,0 +1,57 @@
+# Apache Configuration for Frontend Server
+# Domain: translate.shravani.group
+# Place this in: /etc/apache2/sites-available/translate.shravani.group.conf
+
+<VirtualHost *:80>
+    ServerName translate.shravani.group
+    Redirect permanent / https://translate.shravani.group/
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName translate.shravani.group
+    
+    # SSL Configuration
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/translate.shravani.group/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/translate.shravani.group/privkey.pem
+    
+    # Document Root (update path to your frontend files)
+    DocumentRoot /var/www/translate.shravani.group
+    
+    <Directory /var/www/translate.shravani.group>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+        
+        # SPA Routing - serve index.html for all routes
+        RewriteEngine On
+        RewriteBase /
+        RewriteRule ^index\.html$ - [L]
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule . /index.html [L]
+    </Directory>
+    
+    # Cache static assets
+    <LocationMatch "\.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$">
+        ExpiresActive On
+        ExpiresDefault "access plus 1 year"
+        Header set Cache-Control "public, immutable"
+    </LocationMatch>
+    
+    # Security Headers
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Gzip Compression
+    <IfModule mod_deflate.c>
+        AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+    </IfModule>
+    
+    # Logging
+    ErrorLog ${APACHE_LOG_DIR}/translate.shravani.group.error.log
+    CustomLog ${APACHE_LOG_DIR}/translate.shravani.group.access.log combined
+</VirtualHost>
+
