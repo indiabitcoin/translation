@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python312", "python312Packages.pip", "cmake", "pkg-config", "gcc"]
+nixPkgs = ["python312", "python312Packages.pip", "cmake", "pkg-config", "gcc", "make", "ninja", "g++"]
 
 [phases.install]
 cmds = [
