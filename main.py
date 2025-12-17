@@ -1,9 +1,12 @@
 """Main application entry point for LibreTranslate server."""
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi import FastAPI, HTTPException, Header, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from typing import Optional
+from pydantic import BaseModel
 
 from app.config import settings
 from app.models import (
@@ -15,6 +18,11 @@ from app.models import (
     HealthResponse
 )
 from app.translation import TranslationService
+from app.auth import (
+    create_user, authenticate_user, get_user, update_user_usage,
+    check_usage_limit, get_user_usage, upgrade_user_plan,
+    generate_token, verify_token, get_user_by_api_key
+)
 
 # Configure logging
 logging.basicConfig(
@@ -84,19 +92,29 @@ app.add_middleware(
 )
 
 
-def verify_api_key(api_key: Optional[str] = Header(None, alias="X-API-Key")) -> bool:
-    """Verify API key if required."""
+def verify_api_key(api_key: Optional[str] = Header(None, alias="X-API-Key")) -> Optional[dict]:
+    """Verify API key if required. Returns user dict if authenticated."""
     if not settings.api_key_required:
-        return True
+        # Check if user provided API key for usage tracking
+        if api_key:
+            user = get_user_by_api_key(api_key)
+            return user
+        return None
     
     if not api_key:
         raise HTTPException(status_code=401, detail="API key required")
     
-    valid_keys = settings.valid_api_keys
-    if valid_keys and api_key not in valid_keys:
-        raise HTTPException(status_code=403, detail="Invalid API key")
+    # Check user API keys first
+    user = get_user_by_api_key(api_key)
+    if user:
+        return user
     
-    return True
+    # Check configured API keys
+    valid_keys = settings.valid_api_keys
+    if valid_keys and api_key in valid_keys:
+        return None  # Valid system API key, no user tracking
+    
+    raise HTTPException(status_code=403, detail="Invalid API key")
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -106,7 +124,7 @@ async def health_check():
 
 
 @app.get("/packages")
-async def get_packages(_: bool = Depends(verify_api_key)):
+async def get_packages(user: Optional[dict] = Depends(verify_api_key)):
     """Get detailed information about installed translation packages (diagnostic endpoint)."""
     if not translation_service.is_initialized():
         raise HTTPException(
@@ -166,7 +184,7 @@ async def get_packages(_: bool = Depends(verify_api_key)):
 
 
 @app.get("/languages", response_model=list[LanguageInfo])
-async def get_languages(_: bool = Depends(verify_api_key)):
+async def get_languages(user: Optional[dict] = Depends(verify_api_key)):
     """Get list of supported languages."""
     languages = translation_service.get_languages()
     if languages is None:
@@ -189,7 +207,7 @@ async def get_languages(_: bool = Depends(verify_api_key)):
 @app.post("/translate", response_model=TranslateResponse)
 async def translate(
     request: TranslateRequest,
-    _: bool = Depends(verify_api_key)
+    user: Optional[dict] = Depends(verify_api_key)
 ):
     """Translate text from source language to target language."""
     if not translation_service.is_initialized():
@@ -198,7 +216,17 @@ async def translate(
             detail="Translation service not available"
         )
     
-    translated_text = translation_service.translate(
+    # Check usage limit for authenticated users
+    if user:
+        text_length = len(request.q)
+        if not check_usage_limit(user['email'], text_length):
+            limit = get_user_usage(user['email'])['limit']
+            raise HTTPException(
+                status_code=403,
+                detail=f"Usage limit exceeded. Current plan allows {limit:,} characters per month. Please upgrade your plan."
+            )
+    
+    translated_text, error_message = translation_service.translate(
         text=request.q,
         source=request.source,
         target=request.target,
@@ -206,31 +234,14 @@ async def translate(
     )
     
     if translated_text is None:
-        # Get available languages for helpful error message
-        available_languages = translation_service.get_languages()
-        available_codes = []
-        if available_languages:
-            available_codes = [lang.get("code", "") for lang in available_languages]
-            available_codes = sorted([code for code in available_codes if code])
-        
-        error_detail = f"Translation failed: No translation model available for '{request.source}' -> '{request.target}'"
-        
-        if available_codes:
-            error_detail += f". Available languages: {', '.join(available_codes)}. "
-            error_detail += f"Use GET /languages to see all supported languages."
-        else:
-            error_detail += ". No translation models are installed. Please install models first."
-        
-        # Special message for UK regional languages
-        uk_languages = {"cy": "Welsh", "gd": "Scottish Gaelic", "kw": "Cornish", "gv": "Manx"}
-        if request.target in uk_languages:
-            error_detail += f" Note: {uk_languages[request.target]} ({request.target}) requires a community model. "
-            error_detail += "See COMMUNITY_MODELS.md for installation instructions."
-        
         raise HTTPException(
             status_code=400,
-            detail=error_detail
+            detail=error_message or "Translation failed"
         )
+    
+    # Update usage for authenticated users
+    if user:
+        update_user_usage(user['email'], len(request.q))
     
     return TranslateResponse(translatedText=translated_text)
 
@@ -238,7 +249,7 @@ async def translate(
 @app.post("/detect", response_model=DetectResponse)
 async def detect_language(
     request: DetectRequest,
-    _: bool = Depends(verify_api_key)
+    user: Optional[dict] = Depends(verify_api_key)
 ):
     """Detect the language of the given text."""
     if not translation_service.is_initialized():
@@ -266,6 +277,132 @@ async def detect_language(
         confidence = 0.0
     
     return DetectResponse(language=language, confidence=confidence)
+
+
+# Authentication Models
+class SignupRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class UpgradeRequest(BaseModel):
+    plan: str
+
+# Authentication Endpoints
+@app.post("/api/auth/signup")
+async def signup(request: SignupRequest):
+    """Create a new user account."""
+    try:
+        user = create_user(request.email, request.password, request.name)
+        token = generate_token(user)
+        
+        # Remove sensitive data
+        user_data = {k: v for k, v in user.items() if k != 'password_hash'}
+        
+        return {
+            "token": token,
+            "user": user_data,
+            "usage": get_user_usage(request.email)
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Signup error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create account")
+
+@app.post("/api/auth/login")
+async def login(request: LoginRequest):
+    """Authenticate user and return token."""
+    user = authenticate_user(request.email, request.password)
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    token = generate_token(user)
+    
+    # Remove sensitive data
+    user_data = {k: v for k, v in user.items() if k != 'password_hash'}
+    
+    return {
+        "token": token,
+        "user": user_data,
+        "usage": get_user_usage(request.email)
+    }
+
+def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
+    """Get current user from JWT token."""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization required")
+    
+    try:
+        token = authorization.replace("Bearer ", "")
+        email = verify_token(token)
+        
+        if not email:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        user = get_user(email)
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Auth error: {e}")
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+@app.get("/api/user/usage")
+async def get_usage(user: dict = Depends(get_current_user)):
+    """Get current user usage."""
+    return get_user_usage(user['email'])
+
+@app.post("/api/user/usage")
+async def update_usage(request: dict, user: dict = Depends(get_current_user)):
+    """Update user usage (internal use)."""
+    # This is mainly for frontend to sync, actual usage is tracked in translate endpoint
+    return get_user_usage(user['email'])
+
+@app.post("/api/subscription/upgrade")
+async def upgrade_subscription(request: UpgradeRequest, user: dict = Depends(get_current_user)):
+    """Upgrade user subscription plan."""
+    try:
+        upgrade_user_plan(user['email'], request.plan)
+        updated_user = get_user(user['email'])
+        user_data = {k: v for k, v in updated_user.items() if k != 'password_hash'}
+        
+        return {
+            "user": user_data,
+            "usageLimit": get_user_usage(user['email'])['limit']
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Upgrade error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upgrade plan")
+
+# Serve static files
+import os
+static_dir = os.path.join(os.path.dirname(__file__), 'frontend')
+css_dir = os.path.join(static_dir, 'css')
+js_dir = os.path.join(static_dir, 'js')
+
+if os.path.exists(css_dir):
+    app.mount("/static/css", StaticFiles(directory=css_dir), name="css")
+if os.path.exists(js_dir):
+    app.mount("/static/js", StaticFiles(directory=js_dir), name="js")
+
+@app.get("/")
+async def serve_frontend():
+    """Serve the frontend index page."""
+    index_path = os.path.join(static_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "Frontend not found. Please build the frontend."}
 
 
 if __name__ == "__main__":

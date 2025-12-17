@@ -49,3 +49,6 @@ models/
 *.pt
 *.pth
 
+# User data (contains sensitive information)
+users.json
+
